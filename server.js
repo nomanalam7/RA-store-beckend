@@ -1,13 +1,12 @@
 process.env.TZ = "Asia/Riyadh";
 require("dotenv").config();
 
-const http = require("http");
 const app = require("./src/app");
 
-const PORT = process.env.PORT || 3000;
+// Local dev ke liye
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
 
-const server = http.createServer(app);
-
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+module.exports = app;
