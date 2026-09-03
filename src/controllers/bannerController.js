@@ -24,7 +24,17 @@ const getActiveBanners = async (req, res) => {
 // Create banner (admin)
 const createBanner = async (req, res) => {
   try {
-    const { headline, subtext, ctaText, ctaLink, image, active, order } = req.body;
+    const {
+      headline,
+      subtext,
+      ctaText,
+      ctaLink,
+      image,
+      desktopImage,
+      mobileImage,
+      active,
+      order,
+    } = req.body;
     if (!headline) return sendError(res, "Headline is required", 400);
 
     const banner = await Banner.create({
@@ -33,6 +43,8 @@ const createBanner = async (req, res) => {
       ctaText: ctaText || "Shop Now",
       ctaLink: ctaLink || "/collection",
       image: image || "",
+      desktopImage: desktopImage || "",
+      mobileImage: mobileImage || "",
       active: active !== false,
       order: order || 0,
     });

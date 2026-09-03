@@ -38,6 +38,8 @@ const updateSettingsSchema = Joi.object({
       secondaryCtaText: str,
       secondaryCtaLink: str,
       image: str,
+      desktopImage: str,
+      mobileImage: str,
     }),
     promo: Joi.object({
       active: Joi.boolean(),

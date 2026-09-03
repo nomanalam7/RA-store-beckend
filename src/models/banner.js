@@ -23,6 +23,14 @@ const bannerSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    desktopImage: {
+      type: String,
+      default: "",
+    },
+    mobileImage: {
+      type: String,
+      default: "",
+    },
     active: {
       type: Boolean,
       default: true,

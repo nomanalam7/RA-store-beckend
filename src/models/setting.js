@@ -45,6 +45,8 @@ const settingSchema = new mongoose.Schema(
         secondaryCtaText: { type: String, default: "Explore Collection" },
         secondaryCtaLink: { type: String, default: "/collection" },
         image: { type: String, default: "" },
+        desktopImage: { type: String, default: "" },
+        mobileImage: { type: String, default: "" },
       },
       promo: {
         active: { type: Boolean, default: false },
