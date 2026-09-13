@@ -19,7 +19,7 @@ const settingSchema = new mongoose.Schema(
       instagram: { type: String, default: "" },
       facebook: { type: String, default: "" },
       tiktok: { type: String, default: "" },
-      whatsapp: { type: String, default: "" },
+      whatsapp: { type: String, default: "" }, // phone number in international format
     },
 
     shipping: {
@@ -62,6 +62,29 @@ const settingSchema = new mongoose.Schema(
         text: { type: String, default: "" },
         image: { type: String, default: "" },
       },
+    },
+
+    // WhatsApp floating button configuration
+    whatsapp: {
+      enabled: { type: Boolean, default: false },
+      number: { type: String, default: "" }, // e.g. "923001234567" (country code + number, no +)
+      message: { type: String, default: "Hi, I'm interested in your products!" },
+      position: { type: String, enum: ["bottom-right", "bottom-left"], default: "bottom-right" },
+      showOnMobile: { type: Boolean, default: true },
+      showOnDesktop: { type: Boolean, default: true },
+    },
+
+    // Dynamic delivery estimate configuration
+    deliveryEstimate: {
+      enabled: { type: Boolean, default: true },
+      minDays: { type: Number, default: 3, min: 1 },
+      maxDays: { type: Number, default: 7, min: 1 },
+    },
+
+    // Restricted words for product reviews
+    restrictedWords: {
+      type: [String],
+      default: [],
     },
 
     footer: {

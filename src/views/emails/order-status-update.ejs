@@ -1,0 +1,45 @@
+<%
+  const statusLabels = { pending: 'Order Placed', confirmed: 'Order Confirmed', processing: 'Processing', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled' };
+  const label = statusLabels[order.status] || statusLabel || order.status;
+  const statusMessages = {
+    confirmed: 'Your order has been confirmed and is being prepared.',
+    processing: 'Your order is being processed and will ship soon.',
+    shipped: 'Your order has been shipped and is on its way!',
+    delivered: 'Your order has been delivered. We hope you love your purchase!',
+    cancelled: 'Your order has been cancelled. If you have any questions, please contact us.'
+  };
+  const message = statusMessages[order.status] || 'Your order status has been updated.';
+%>
+<%- include('partials/header', { title: 'Order Status Update #' + order.orderNumber, settings: settings }) %>
+  <h2>Order Status Update</h2>
+  <p>Hi <%= customer.fullName %>,</p>
+
+  <p>Your order <strong>#<%= order.orderNumber %></strong> status has been updated to:</p>
+
+  <div style="text-align: center; margin: 24px 0;">
+    <span class="status-badge status-<%= order.status %>"><%= label %></span>
+  </div>
+
+  <p><%= message %></p>
+
+  <% if (note) { %>
+    <div class="note-box">
+      <p><strong>Note from our team:</strong> <%= note %></p>
+    </div>
+  <% } %>
+
+  <p><strong>Delivery Estimate:</strong> <%= order.deliveryEstimate.min %>-<%= order.deliveryEstimate.max %> business days</p>
+
+  <table class="totals-table" role="table" style="margin: 24px auto;">
+    <tr>
+      <td class="label">Order Total</td>
+      <td class="value">Rs. <%= order.total.toLocaleString() %></td>
+    </tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <p>You can track your order anytime <a href="<%= FRONTEND_URL %>/order/<%= order.orderNumber %>">here</a>.</p>
+
+  <p>Thank you for shopping with <%= settings.general?.storeName || 'RA Store' %>!</p>
+<%- include('partials/footer', { settings: settings }) %>

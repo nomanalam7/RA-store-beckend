@@ -1,0 +1,76 @@
+<%- include('partials/header', { title: 'Order Confirmed #' + order.orderNumber, settings: settings }) %>
+  <h2>Thank you for your order, <%= customer.fullName %>!</h2>
+  <p>We've received your order and it's being processed. Here are your order details:</p>
+
+  <div style="background: #f0f4f8; border-radius: 8px; padding: 16px; margin: 16px 0;">
+    <p style="margin: 0 0 4px; font-size: 14px; color: #6b7280;">Order Number</p>
+    <p style="margin: 0; font-size: 18px; font-weight: 700; color: #1e3a8a;">#<%= order.orderNumber %></p>
+  </div>
+
+  <p><strong>Order Date:</strong> <%= new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+  <p><strong>Delivery Estimate:</strong> <%= order.deliveryEstimate.min %>-<%= order.deliveryEstimate.max %> business days</p>
+
+  <h3 style="margin: 24px 0 16px;">Order Items</h3>
+  <table class="order-table" role="table">
+    <thead>
+      <tr>
+        <th style="width: 72px;">Image</th>
+        <th>Product</th>
+        <th style="width: 90px;">Qty</th>
+        <th style="width: 120px;">Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% order.items.forEach(function(item) { %>
+        <tr>
+          <td style="padding: 16px 16px 16px 0;">
+            <% if (item.image) { %>
+              <img src="<%= item.image %>" alt="<%= item.name %>" class="item-image" style="display: block;">
+            <% } else { %>
+              <div class="item-image" style="background: #e5e7eb; text-align: center; color: #9ca3af; font-size: 12px; line-height: 56px;">No Image</div>
+            <% } %>
+          </td>
+          <td>
+            <div class="item-name"><%= item.name %></div>
+            <div class="item-meta">
+              <% if (item.size) { %>Size: <%= item.size %><br><% } %>
+              Unit: Rs. <%= Number(item.unitPrice).toLocaleString() %>
+            </div>
+          </td>
+          <td style="text-align: center; font-weight: 500;"><%= item.quantity %></td>
+          <td class="item-price">Rs. <%= item.lineTotal.toLocaleString() %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+
+  <table class="totals-table" role="table">
+    <tr>
+      <td class="label">Subtotal</td>
+      <td class="value">Rs. <%= order.subtotal.toLocaleString() %></td>
+    </tr>
+    <tr>
+      <td class="label">Delivery</td>
+      <td class="value"><%= order.deliveryCharges === 0 ? 'FREE' : 'Rs. ' + order.deliveryCharges.toLocaleString() %></td>
+    </tr>
+    <tr class="total-row">
+      <td class="label">Total</td>
+      <td class="value">Rs. <%= order.total.toLocaleString() %></td>
+    </tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <h3 style="margin: 16px 0;">Delivery Address</h3>
+  <p style="line-height: 1.6;">
+    <%= customer.fullName %><br>
+    <%= customer.address %><br>
+    <%= customer.city %><br>
+    Phone: <%= customer.phone %>
+    <% if (customer.email) { %><br>Email: <%= customer.email %><% } %>
+  </p>
+
+  <p style="margin-top: 24px;">We'll notify you when your order status changes. You can also track your order <a href="<%= FRONTEND_URL %>/order/<%= order.orderNumber %>">here</a>.</p>
+
+  <p>Thank you for shopping with <%= settings.general?.storeName || 'RA Store' %>!</p>
+<%- include('partials/footer', { settings: settings }) %>

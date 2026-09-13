@@ -29,8 +29,9 @@ const getStats = async (req, res) => {
       Order.find().sort({ createdAt: -1 }).limit(8),
       Product.find({ salesCount: { $gt: 0 } })
         .populate("category")
+        .select("+costPrice")
         .sort({ salesCount: -1 })
-        .limit(5),
+        .limit(8),
     ]);
 
     const stats = {

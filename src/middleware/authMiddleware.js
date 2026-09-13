@@ -43,4 +43,36 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-module.exports = { authenticate };
+// Like authenticate, but allows anonymous requests through.
+// Sets req.user / req.userId only when a valid token is supplied.
+const authenticateOptional = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    req.user = null;
+    req.userId = null;
+
+    if (!authHeader) return next();
+
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
+    if (!token) return next();
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return next(); // invalid/expired token — treat as anonymous
+    }
+
+    const user = await User.findById(decoded.userId).select("-password");
+    if (!user) return next();
+
+    req.user = user;
+    req.userId = user._id;
+    return next();
+  } catch (error) {
+    console.error("Optional authentication error:", error);
+    return next();
+  }
+};
+
+module.exports = { authenticate, authenticateOptional };

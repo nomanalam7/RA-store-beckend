@@ -37,6 +37,7 @@ const updateOrderStatusSchema = Joi.object({
   status: Joi.string()
     .valid(...ORDER_STATUSES)
     .required(),
+  note: Joi.string().allow("").max(500),
 });
 
 module.exports = { createOrderSchema, updateOrderStatusSchema, ORDER_STATUSES };

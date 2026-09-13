@@ -1,5 +1,6 @@
 const Order = require("../models/order");
 const Product = require("../models/product");
+const User = require("../models/user");
 const { sendSuccess, sendError } = require("../utils/responseHelper");
 const { schemaValidator } = require("../utils/validator");
 const { buildAggregatePagination, generateOrderNumber } = require("../utils/helper");
@@ -8,6 +9,10 @@ const {
   createOrderSchema,
   updateOrderStatusSchema,
 } = require("../validators/orderValidator");
+const EmailService = require("../utils/emailService");
+
+// Helper to format currency
+const fmt = (n) => (Number(n) || 0).toLocaleString();
 
 // Public: place a COD order — validates stock, snapshots prices, decrements stock, increments salesCount
 const createOrder = async (req, res) => {
@@ -32,10 +37,19 @@ const createOrder = async (req, res) => {
       if (!product.isActive) {
         return sendError(res, `Product "${product.name}" is not available`, 400);
       }
-      if (product.stock < item.quantity) {
+
+      // Check stock - support both sizeStock and legacy global stock
+      let availableStock;
+      if (product.usesSizeStock && item.size) {
+        availableStock = product.getSizeStock(item.size);
+      } else {
+        availableStock = product.stock;
+      }
+
+      if (availableStock < item.quantity) {
         return sendError(
           res,
-          `Insufficient stock for "${product.name}" (available: ${product.stock})`,
+          `Insufficient stock for "${product.name}" (available: ${availableStock})`,
           400
         );
       }
@@ -67,6 +81,9 @@ const createOrder = async (req, res) => {
         : deliveryCharge || 0;
     const total = subtotal + deliveryCharges;
 
+    // Get delivery estimate from settings
+    const deliveryEstimate = settings.deliveryEstimate || { minDays: 3, maxDays: 7 };
+
     const orderNumber = generateOrderNumber();
     const order = await Order.create({
       orderNumber,
@@ -76,17 +93,74 @@ const createOrder = async (req, res) => {
       deliveryCharges,
       total,
       paymentMethod: value.paymentMethod || "cod",
+      // Initialize status history
+      statusHistory: [{ status: "pending", note: "Order placed", changedBy: "customer" }],
+      // Snapshot delivery estimate at order time
+      deliveryEstimate: {
+        min: deliveryEstimate.minDays || 3,
+        max: deliveryEstimate.maxDays || 7,
+      },
     });
 
-    // Decrement stock + increment salesCount
+    // Decrement stock + increment salesCount (supports sizeStock)
     await Promise.all(
       value.items.map((item) => {
         const product = productMap.get(String(item.product));
-        return Product.findByIdAndUpdate(item.product, {
-          $inc: { stock: -item.quantity, salesCount: item.quantity },
-        });
+        if (product.usesSizeStock && item.size) {
+          return product.decrementSizeStock(item.size, item.quantity);
+        } else {
+          return Product.findByIdAndUpdate(item.product, {
+            $inc: { stock: -item.quantity, salesCount: item.quantity },
+          });
+        }
       })
     );
+
+    // Send admin notification email
+    try {
+      const adminSettings = await getOrCreateSettings();
+      if (adminSettings.general?.contactEmail) {
+        const emailService = new EmailService(adminSettings.general.contactEmail);
+        await emailService.sendEmail(`New Order #${orderNumber}`, {
+          template: "new-order-admin",
+          data: {
+            orderNumber,
+            customer: value.customer,
+            itemsCount: orderItems.length,
+            total,
+            settings: adminSettings,
+          },
+        });
+      }
+    } catch (emailErr) {
+      console.error("Failed to send admin order notification:", emailErr);
+    }
+
+    // Send customer confirmation email
+    try {
+      if (value.customer.email) {
+        const emailService = new EmailService(value.customer.email);
+        await emailService.sendEmail(`Order Confirmed #${orderNumber}`, {
+          template: "order-confirmation",
+          data: {
+            order: {
+              orderNumber,
+              subtotal,
+              discount: 0,
+              deliveryCharges,
+              total,
+              deliveryEstimate: { min: deliveryEstimate.minDays || 3, max: deliveryEstimate.maxDays || 7 },
+              createdAt: new Date(),
+              items: orderItems,
+            },
+            customer: value.customer,
+            settings,
+          },
+        });
+      }
+    } catch (emailErr) {
+      console.error("Failed to send customer order confirmation:", emailErr);
+    }
 
     return sendSuccess(res, { order }, "Order placed successfully", 201);
   } catch (err) {
@@ -159,7 +233,29 @@ const getOrderByNumber = async (req, res) => {
   }
 };
 
-// Admin: update order status — restores stock on cancel (once)
+// Public: order lookup with phone verification (for tracking page)
+const lookupOrder = async (req, res) => {
+  try {
+    const { orderNumber, phone } = req.body;
+    if (!orderNumber || !phone) {
+      return sendError(res, "Order number and phone are required", 400);
+    }
+    const order = await Order.findOne({ orderNumber: orderNumber.trim() });
+    if (!order) return sendError(res, "Order not found", 404);
+    // Verify phone matches (normalize both)
+    const orderPhone = String(order.customer?.phone || "").replace(/\D/g, "");
+    const inputPhone = String(phone).replace(/\D/g, "");
+    if (orderPhone !== inputPhone) {
+      return sendError(res, "Order not found", 404); // Don't reveal order exists
+    }
+    return sendSuccess(res, { order }, "Order fetched");
+  } catch (err) {
+    console.error("Lookup order error:", err);
+    return sendError(res, "Failed to fetch order", 500);
+  }
+};
+
+// Admin: update order status — restores stock on cancel (once), tracks history, sends email
 const updateOrderStatus = async (req, res) => {
   try {
     const [error, value] = schemaValidator(req.body, updateOrderStatusSchema);
@@ -169,25 +265,79 @@ const updateOrderStatus = async (req, res) => {
     if (!order) return sendError(res, "Order not found", 404);
 
     const oldStatus = order.status;
-    order.status = value.status;
+    const newStatus = value.status;
+
+    // Prevent invalid transitions (optional but helpful)
+    const validTransitions = {
+      pending: ["confirmed", "cancelled"],
+      confirmed: ["processing", "cancelled"],
+      processing: ["shipped", "cancelled"],
+      shipped: ["delivered", "cancelled"],
+      delivered: [],
+      cancelled: [],
+    };
+
+    if (validTransitions[oldStatus] && !validTransitions[oldStatus].includes(newStatus)) {
+      return sendError(res, `Cannot change status from ${oldStatus} to ${newStatus}`, 400);
+    }
+
+    order.status = newStatus;
+
+    // Add to status history
+    order.statusHistory.push({
+      status: newStatus,
+      note: value.note || `Status changed from ${oldStatus} to ${newStatus}`,
+      changedBy: "admin",
+    });
 
     // Restore stock once when an order is first moved to cancelled
     if (
-      value.status === "cancelled" &&
+      newStatus === "cancelled" &&
       oldStatus !== "cancelled" &&
       !order.stockRestored
     ) {
-      await Promise.all(
-        order.items.map((item) =>
-          Product.findByIdAndUpdate(item.product, {
-            $inc: { stock: item.quantity, salesCount: -item.quantity },
-          })
-        )
-      );
+      for (const item of order.items) {
+        const product = await Product.findById(item.product);
+        if (product) {
+          if (product.usesSizeStock && item.size) {
+            await product.incrementSizeStock(item.size, item.quantity);
+          } else {
+            await Product.findByIdAndUpdate(item.product, {
+              $inc: { stock: item.quantity, salesCount: -item.quantity },
+            });
+          }
+        }
+      }
       order.stockRestored = true;
     }
 
     await order.save();
+
+    // Send customer status change email
+    try {
+      if (order.customer.email) {
+        const emailService = new EmailService(order.customer.email);
+        const statusLabel = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        await emailService.sendEmail(`Order #${order.orderNumber} Status Update: ${statusLabel}`, {
+          template: "order-status-update",
+          data: {
+            order: {
+              orderNumber: order.orderNumber,
+              status: newStatus,
+              total: order.total,
+              deliveryEstimate: order.deliveryEstimate,
+            },
+            customer: order.customer,
+            note: value.note || "",
+            statusLabel,
+            settings: await getOrCreateSettings(),
+          },
+        });
+      }
+    } catch (emailErr) {
+      console.error("Failed to send status change email:", emailErr);
+    }
+
     return sendSuccess(res, { order }, "Order status updated");
   } catch (err) {
     console.error("Update order status error:", err);
@@ -200,5 +350,6 @@ module.exports = {
   listOrders,
   getOrderById,
   getOrderByNumber,
+  lookupOrder,
   updateOrderStatus,
 };

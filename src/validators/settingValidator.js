@@ -56,6 +56,20 @@ const updateSettingsSchema = Joi.object({
       image: str,
     }),
   }),
+  whatsapp: Joi.object({
+    enabled: Joi.boolean(),
+    number: str,
+    message: str,
+    position: Joi.string().valid("bottom-right", "bottom-left"),
+    showOnMobile: Joi.boolean(),
+    showOnDesktop: Joi.boolean(),
+  }),
+  deliveryEstimate: Joi.object({
+    enabled: Joi.boolean(),
+    minDays: Joi.number().integer().min(1).default(3),
+    maxDays: Joi.number().integer().min(1).default(7),
+  }),
+  restrictedWords: Joi.array().items(Joi.string()),
   footer: Joi.object({
     description: str,
     copyright: str,

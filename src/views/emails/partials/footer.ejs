@@ -1,0 +1,24 @@
+</div>
+      <div class="email-footer">
+        <p><%= settings?.general?.storeName || 'RA Store' %></p>
+        <% if (settings?.general?.address) { %>
+          <p><%= settings.general.address %></p>
+        <% } %>
+        <p>Questions? Contact us at <a href="mailto:<%= settings?.general?.contactEmail || 'support@rastore.com' %>"><%= settings?.general?.contactEmail || 'support@rastore.com' %></a></p>
+        <div class="social-links">
+          <% if (settings?.social?.instagram) { %>
+            <a href="<%= settings.social.instagram %>" target="_blank"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/instagram.svg" alt="Instagram" style="filter: grayscale(1);"></a>
+          <% } %>
+          <% if (settings?.social?.facebook) { %>
+            <a href="<%= settings.social.facebook %>" target="_blank"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook" style="filter: grayscale(1);"></a>
+          <% } %>
+          <% if (settings?.social?.tiktok) { %>
+            <a href="<%= settings.social.tiktok %>" target="_blank"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/tiktok.svg" alt="TikTok" style="filter: grayscale(1);"></a>
+          <% } %>
+        </div>
+        <p style="margin-top: 16px; font-size: 12px; color: #9ca3af;">You received this email because you placed an order or subscribed to RA Store updates.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

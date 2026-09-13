@@ -10,6 +10,7 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  getProductAnalytics,
 } = require("../controllers/productController");
 const { authenticate } = require("../middleware/authMiddleware");
 const { authorizeAdmin } = require("../middleware/adminMiddleware");
@@ -25,6 +26,7 @@ router.get("/slug/:slug", getProductBySlug);
 
 // Admin
 router.get("/admin/all", authenticate, authorizeAdmin, adminListProducts);
+router.get("/admin/:id/analytics", authenticate, authorizeAdmin, getProductAnalytics);
 router.get("/:id", authenticate, authorizeAdmin, getProductById);
 router.post("/", authenticate, authorizeAdmin, createProduct);
 router.put("/:id", authenticate, authorizeAdmin, updateProduct);

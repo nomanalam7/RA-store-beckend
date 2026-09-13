@@ -1,0 +1,15 @@
+<%- include('partials/header', { title: 'Your Review Has Been Approved', settings: settings }) %>
+  <h2>Your Review Has Been Approved!</h2>
+  <p>Hi <%= customerName %>,</p>
+
+  <p>Great news! Your review for <strong><%= productName %></strong> has been approved and is now visible on our site.</p>
+
+  <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 24px 0;">
+    <p style="margin: 0 0 8px; font-weight: 600; color: #166534;">Thank you for sharing your experience!</p>
+    <p style="margin: 0; color: #166534;">Your feedback helps other customers make informed decisions and helps us improve.</p>
+  </div>
+
+  <p>You can view your review <a href="<%= FRONTEND_URL %>/product/<%= productSlug %>">here</a>.</p>
+
+  <p>Thank you for being a valued customer of <%= settings.general?.storeName || 'RA Store' %>!</p>
+<%- include('partials/footer', { settings: settings }) %>

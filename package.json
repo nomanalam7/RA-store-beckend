@@ -8,7 +8,9 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "seed:admin": "node src/seed/seedAdmin.js",
-    "seed": "node seedData.js"
+    "seed": "node seedData.js",
+    "migrate:sizestock": "node src/seed/migrateSizeStock.js",
+    "smoke:test": "node src/seed/smokeTest.js"
   },
   "keywords": [],
   "author": "",
@@ -27,7 +29,8 @@
     "mongoose": "^8.9.5",
     "multer": "^2.1.1",
     "node-cron": "^4.6.0",
-    "nodemailer": "^8.0.7"
+    "nodemailer": "^8.0.7",
+    "ejs": "^3.1.10"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

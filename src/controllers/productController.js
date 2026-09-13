@@ -1,5 +1,7 @@
 const Product = require("../models/product");
 const Category = require("../models/category");
+const Review = require("../models/review");
+const Order = require("../models/order");
 const { sendSuccess, sendError } = require("../utils/responseHelper");
 const { schemaValidator } = require("../utils/validator");
 const {
@@ -45,6 +47,32 @@ const PRICING_FIELDS = {
     ],
   },
   inStock: { $gt: ["$stock", 0] },
+  usesSizeStock: {
+    $and: [
+      { $isArray: "$sizes" },
+      { $gt: [{ $size: "$sizes" }, 0] },
+      { $eq: [{ $type: { $arrayElemAt: ["$sizes", 0] } }, "object"] },
+    ],
+  },
+  availableStock: {
+    $cond: {
+      if: {
+        $and: [
+          { $isArray: "$sizes" },
+          { $gt: [{ $size: "$sizes" }, 0] },
+          { $eq: [{ $type: { $arrayElemAt: ["$sizes", 0] } }, "object"] },
+        ],
+      },
+      then: {
+        $reduce: {
+          input: "$sizes",
+          initialValue: 0,
+          in: { $add: ["$$value", { $ifNull: ["$$this.stock", 0] }] },
+        },
+      },
+      else: "$stock",
+    },
+  },
 };
 
 const SORT_MAP = {
@@ -236,6 +264,7 @@ const adminListProducts = async (req, res) => {
 
     const [products, totalCount] = await Promise.all([
       Product.find(filter)
+        .select("+costPrice")
         .populate("category")
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -267,7 +296,9 @@ const adminListProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate("category");
+    const product = await Product.findById(req.params.id)
+      .select("+costPrice")
+      .populate("category");
     if (!product) return sendError(res, "Product not found", 404);
     return sendSuccess(res, { product }, "Product fetched");
   } catch (err) {
@@ -286,7 +317,9 @@ const createProduct = async (req, res) => {
 
     value.slug = await generateUniqueSlug(Product, value.slug || value.name);
     const created = await Product.create(value);
-    const product = await Product.findById(created._id).populate("category");
+    const product = await Product.findById(created._id)
+      .select("+costPrice")
+      .populate("category");
     return sendSuccess(res, { product }, "Product created", 201);
   } catch (err) {
     console.error("Create product error:", err);
@@ -325,7 +358,9 @@ const updateProduct = async (req, res) => {
 
     Object.assign(product, value);
     await product.save();
-    const updated = await Product.findById(product._id).populate("category");
+    const updated = await Product.findById(product._id)
+      .select("+costPrice")
+      .populate("category");
     return sendSuccess(res, { product: updated }, "Product updated");
   } catch (err) {
     console.error("Update product error:", err);
@@ -344,6 +379,115 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+// Admin: Product analytics / detail view
+const getProductAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await Product.findById(id).select("+costPrice").populate("category");
+    if (!product) return sendError(res, "Product not found", 404);
+
+    // Get order data for this product
+    const orderItems = await Order.aggregate([
+      { $unwind: "$items" },
+      { $match: { "items.product": product._id, status: { $ne: "cancelled" } } },
+      {
+        $group: {
+          _id: null,
+          totalQuantity: { $sum: "$items.quantity" },
+          totalRevenue: { $sum: "$items.lineTotal" },
+          totalCost: { $sum: { $multiply: ["$items.quantity", product.costPrice || 0] } },
+          orderCount: { $sum: 1 },
+          avgOrderValue: { $avg: "$items.lineTotal" },
+        },
+      },
+    ]);
+
+    const stats = orderItems[0] || {
+      totalQuantity: 0,
+      totalRevenue: 0,
+      totalCost: 0,
+      orderCount: 0,
+      avgOrderValue: 0,
+    };
+
+    const profit = stats.totalRevenue - stats.totalCost;
+    const profitMargin = stats.totalRevenue > 0 ? (profit / stats.totalRevenue) * 100 : 0;
+
+    // Get reviews summary
+    const reviewsSummary = await Review.aggregate([
+      { $match: { product: product._id, isApproved: true } },
+      {
+        $group: {
+          _id: null,
+          totalReviews: { $sum: 1 },
+          avgRating: { $avg: "$rating" },
+          ratingDist: { $push: "$rating" },
+        },
+      },
+    ]);
+
+    const reviewStats = reviewsSummary[0] || { totalReviews: 0, avgRating: 0, ratingDist: [] };
+    const ratingDistribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviewStats.ratingDist.forEach((r) => {
+      if (ratingDistribution[r] !== undefined) ratingDistribution[r]++;
+    });
+
+    // Stock per size
+    const stockPerSize = product.usesSizeStock
+      ? product.sizes.map((s) => ({ size: s.size, stock: s.stock }))
+      : product.sizes.map((s) => ({ size: s, stock: product.stock }));
+
+    // Recent orders for this product
+    const recentOrders = await Order.find({ "items.product": product._id, status: { $ne: "cancelled" } })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select("orderNumber customer.fullName items status createdAt total");
+
+    return sendSuccess(
+      res,
+      {
+        product: {
+          _id: product._id,
+          name: product.name,
+          sku: product.sku,
+          price: product.price,
+          salePrice: product.salePrice,
+          costPrice: product.costPrice,
+          effectivePrice: product.effectivePrice,
+          stock: product.stock,
+          availableStock: product.availableStock,
+          usesSizeStock: product.usesSizeStock,
+          sizes: product.sizes,
+          stockPerSize,
+          salesCount: product.salesCount,
+          isActive: product.isActive,
+          isFeatured: product.isFeatured,
+          category: product.category,
+        },
+        analytics: {
+          totalQuantitySold: stats.totalQuantity,
+          totalRevenue: stats.totalRevenue,
+          totalCost: stats.totalCost,
+          profit,
+          profitMargin: Math.round(profitMargin * 100) / 100,
+          orderCount: stats.orderCount,
+          avgOrderValue: Math.round(stats.avgOrderValue || 0),
+          reviews: {
+            total: reviewStats.totalReviews,
+            averageRating: reviewStats.avgRating ? Math.round(reviewStats.avgRating * 10) / 10 : 0,
+            distribution: ratingDistribution,
+          },
+          recentOrders,
+        },
+      },
+      "Product analytics fetched"
+    );
+  } catch (err) {
+    console.error("Product analytics error:", err);
+    return sendError(res, "Failed to fetch product analytics", 500);
+  }
+};
+
 module.exports = {
   listProducts,
   getProductBySlug,
@@ -355,4 +499,5 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
+  getProductAnalytics,
 };

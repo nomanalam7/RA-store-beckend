@@ -1,0 +1,38 @@
+<%- include('partials/header', { title: 'New Order #' + orderNumber, settings: settings }) %>
+  <h2>New Order Received</h2>
+  <p>A new order has been placed on <%= settings.general?.storeName || 'RA Store' %>.</p>
+
+  <div style="background: #f0f4f8; border-radius: 8px; padding: 16px; margin: 16px 0;">
+    <p style="margin: 0 0 4px; font-size: 14px; color: #6b7280;">Order Number</p>
+    <p style="margin: 0; font-size: 18px; font-weight: 700; color: #1e3a8a;">#<%= orderNumber %></p>
+  </div>
+
+  <h3 style="margin: 24px 0 16px;">Customer Details</h3>
+  <p style="line-height: 1.6;">
+    <strong><%= customer.fullName %></strong><br>
+    Phone: <%= customer.phone %><br>
+    <% if (customer.email) { %>Email: <%= customer.email %><br><% } %>
+    <%= customer.address %><br>
+    <%= customer.city %>
+  </p>
+
+  <h3 style="margin: 24px 0 16px;">Order Summary</h3>
+  <table class="totals-table" role="table">
+    <tr>
+      <td class="label">Items</td>
+      <td class="value"><%= itemsCount %></td>
+    </tr>
+    <tr>
+      <td class="label">Total</td>
+      <td class="value">Rs. <%= total.toLocaleString() %></td>
+    </tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <p style="text-align: center; margin: 24px 0;">
+    <a href="<%= ADMIN_URL %>" class="button">View in Admin Panel</a>
+  </p>
+
+  <p>Log in to the admin panel to process this order.</p>
+<%- include('partials/footer', { settings: settings }) %>

@@ -1,0 +1,38 @@
+<%- include('partials/header', { title: 'New Review on ' + productName, settings: settings }) %>
+  <h2>New Product Review</h2>
+  <p>A new review has been submitted on <%= settings.general?.storeName || 'RA Store' %>.</p>
+
+  <div style="background: #f0f4f8; border-radius: 8px; padding: 16px; margin: 16px 0;">
+    <p style="margin: 0 0 4px; font-size: 14px; color: #6b7280;">Product</p>
+    <p style="margin: 0; font-size: 18px; font-weight: 700; color: #1e3a8a;"><%= productName %></p>
+  </div>
+
+  <table class="totals-table" role="table" style="max-width: 400px; margin: 16px auto;">
+    <tr>
+      <td class="label">Rating</td>
+      <td class="value"><%= rating %>/5</td>
+    </tr>
+    <tr>
+      <td class="label">Verified Purchase</td>
+      <td class="value"><%= isVerified ? 'Yes' : 'No' %></td>
+    </tr>
+    <tr>
+      <td class="label">Auto-approved</td>
+      <td class="value"><%= autoApproved ? 'Yes' : 'No (restricted word detected)' %></td>
+    </tr>
+  </table>
+
+  <% if (title) { %>
+    <h3 style="margin: 24px 0 8px;">Title</h3>
+    <p><%= title %></p>
+  <% } %>
+
+  <h3 style="margin: 24px 0 8px;">Comment</h3>
+  <p style="white-space: pre-wrap; line-height: 1.6;"><%= comment %></p>
+
+  <div class="divider"></div>
+
+  <p style="text-align: center; margin: 24px 0;">
+    <a href="<%= ADMIN_URL %>/reviews" class="button">Moderate in Admin Panel</a>
+  </p>
+<%- include('partials/footer', { settings: settings }) %>

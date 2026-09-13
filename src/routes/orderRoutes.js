@@ -4,6 +4,7 @@ const {
   listOrders,
   getOrderById,
   getOrderByNumber,
+  lookupOrder,
   updateOrderStatus,
 } = require("../controllers/orderController");
 const { authenticate } = require("../middleware/authMiddleware");
@@ -14,6 +15,7 @@ const router = express.Router();
 // Public
 router.post("/", createOrder);
 router.get("/number/:orderNumber", getOrderByNumber);
+router.post("/lookup", lookupOrder);
 
 // Admin
 router.get("/", authenticate, authorizeAdmin, listOrders);

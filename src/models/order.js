@@ -21,6 +21,20 @@ const orderItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Status history entry — tracks every status change for timeline display
+const statusHistorySchema = new mongoose.Schema(
+  {
+    status: { type: String, required: true },
+    note: { type: String, default: "" },
+    changedBy: {
+      type: String,
+      enum: ["customer", "admin", "system"],
+      default: "admin",
+    },
+  },
+  { _id: false, timestamps: { createdAt: true, updatedAt: false } }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     orderNumber: { type: String, required: true, unique: true, index: true },
@@ -50,6 +64,16 @@ const orderSchema = new mongoose.Schema(
       ],
       default: "pending",
       index: true,
+    },
+    // Status change history for order tracking timeline
+    statusHistory: {
+      type: [statusHistorySchema],
+      default: [],
+    },
+    // Delivery estimate snapshot at order time
+    deliveryEstimate: {
+      min: { type: Number, default: 3 },
+      max: { type: Number, default: 7 },
     },
     // Guards against restoring stock twice when an order is cancelled
     stockRestored: { type: Boolean, default: false },

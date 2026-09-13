@@ -10,6 +10,7 @@ const dashboardRoutes = require("./dashboardRoutes");
 const uploadRoutes = require("./uploadRoutes");
 const imagekitRoutes = require("./imagekitRoutes");
 const bannerRoutes = require("./bannerRoutes");
+const reviewRoutes = require("./reviewRoutes");
 
 const router = express.Router();
 
@@ -24,5 +25,6 @@ router.use("/dashboard", dashboardRoutes);
 router.use("/upload", uploadRoutes);
 router.use("/imagekit", imagekitRoutes);
 router.use("/banners", bannerRoutes);
+router.use("/reviews", reviewRoutes);
 
 module.exports = router;
