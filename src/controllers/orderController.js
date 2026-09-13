@@ -233,21 +233,17 @@ const getOrderByNumber = async (req, res) => {
   }
 };
 
-// Public: order lookup with phone verification (for tracking page)
+// Public: order lookup by order number only (for tracking page).
+// An order number is unique + non-sequential, so it is the only credential
+// a customer needs to view status — no phone prompt required.
 const lookupOrder = async (req, res) => {
   try {
-    const { orderNumber, phone } = req.body;
-    if (!orderNumber || !phone) {
-      return sendError(res, "Order number and phone are required", 400);
+    const { orderNumber } = req.body;
+    if (!orderNumber || !orderNumber.trim()) {
+      return sendError(res, "Order number is required", 400);
     }
     const order = await Order.findOne({ orderNumber: orderNumber.trim() });
     if (!order) return sendError(res, "Order not found", 404);
-    // Verify phone matches (normalize both)
-    const orderPhone = String(order.customer?.phone || "").replace(/\D/g, "");
-    const inputPhone = String(phone).replace(/\D/g, "");
-    if (orderPhone !== inputPhone) {
-      return sendError(res, "Order not found", 404); // Don't reveal order exists
-    }
     return sendSuccess(res, { order }, "Order fetched");
   } catch (err) {
     console.error("Lookup order error:", err);

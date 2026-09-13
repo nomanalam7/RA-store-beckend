@@ -41,7 +41,7 @@ const createBanner = async (req, res) => {
       headline,
       subtext: subtext || "",
       ctaText: ctaText || "Shop Now",
-      ctaLink: ctaLink || "/collection",
+      ctaLink: ctaLink || "/collections",
       image: image || "",
       desktopImage: desktopImage || "",
       mobileImage: mobileImage || "",

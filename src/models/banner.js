@@ -17,7 +17,7 @@ const bannerSchema = new mongoose.Schema(
     },
     ctaLink: {
       type: String,
-      default: "/collection",
+      default: "/collections",
     },
     image: {
       type: String,

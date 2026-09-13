@@ -474,10 +474,10 @@ const settingsData = {
         "Football culture. Everyday essentials. Modern streetwear. Discover pieces made for your style.",
 
       primaryCtaText: "Shop Collection",
-      primaryCtaLink: "/collection",
+      primaryCtaLink: "/collections",
 
       secondaryCtaText: "Explore Jerseys",
-      secondaryCtaLink: "/collection?category=football-jerseys",
+      secondaryCtaLink: "/collections?category=football-jerseys",
 
       image: "/uploads/home/hero-banner.jpg",
     },
@@ -493,7 +493,7 @@ const settingsData = {
       highlight: "Up To 20% Off",
 
       ctaText: "Shop Sale",
-      ctaLink: "/collection?sale=true",
+      ctaLink: "/collections?sale=true",
 
       image: "/uploads/home/promo-banner.jpg",
     },

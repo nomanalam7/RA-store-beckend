@@ -41,9 +41,9 @@ const settingSchema = new mongoose.Schema(
         headline: { type: String, default: "Wear The Statement" },
         subtext: { type: String, default: "" },
         primaryCtaText: { type: String, default: "Shop Now" },
-        primaryCtaLink: { type: String, default: "/collection" },
+        primaryCtaLink: { type: String, default: "/collections" },
         secondaryCtaText: { type: String, default: "Explore Collection" },
-        secondaryCtaLink: { type: String, default: "/collection" },
+        secondaryCtaLink: { type: String, default: "/collections" },
         image: { type: String, default: "" },
         desktopImage: { type: String, default: "" },
         mobileImage: { type: String, default: "" },
@@ -54,7 +54,7 @@ const settingSchema = new mongoose.Schema(
         subtitle: { type: String, default: "" },
         highlight: { type: String, default: "" }, // e.g. "Up To 40% Off"
         ctaText: { type: String, default: "Shop Sale" },
-        ctaLink: { type: String, default: "/collection?sale=true" },
+        ctaLink: { type: String, default: "/collections?sale=true" },
         image: { type: String, default: "" },
       },
       aboutPreview: {
