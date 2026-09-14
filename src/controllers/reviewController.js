@@ -3,6 +3,7 @@ const Product = require("../models/product");
 const Order = require("../models/order");
 const User = require("../models/user");
 const crypto = require("crypto");
+const mongoose = require("mongoose");
 const { sendSuccess, sendError } = require("../utils/responseHelper");
 const { schemaValidator } = require("../utils/validator");
 const { buildAggregatePagination } = require("../utils/helper");
@@ -142,6 +143,12 @@ const getProductReviews = async (req, res) => {
 
     const filter = { product: productId, isApproved: true };
 
+    // Aggregate $match needs an explicit ObjectId cast — Mongoose only casts
+    // automatically for find/count, not for raw pipeline stages (which is why
+    // average/distribution came back as 0 while the reviews list was fine).
+    const productObjectId =
+      mongoose.isValidObjectId(productId) ? new mongoose.Types.ObjectId(productId) : productId;
+
     const [reviews, totalCount] = await Promise.all([
       Review.find(filter)
         .populate("user", "name")
@@ -153,7 +160,7 @@ const getProductReviews = async (req, res) => {
 
     // Get rating distribution
     const distribution = await Review.aggregate([
-      { $match: { product: productId, isApproved: true } },
+      { $match: { product: productObjectId, isApproved: true } },
       { $group: { _id: "$rating", count: { $sum: 1 } } },
       { $sort: { _id: -1 } },
     ]);
@@ -165,7 +172,7 @@ const getProductReviews = async (req, res) => {
 
     const totalReviews = await Review.countDocuments({ product: productId, isApproved: true });
     const avgResult = await Review.aggregate([
-      { $match: { product: productId, isApproved: true } },
+      { $match: { product: productObjectId, isApproved: true } },
       { $group: { _id: null, avg: { $avg: "$rating" } } },
     ]);
     const averageRating = avgResult[0] ? Math.round(avgResult[0].avg * 10) / 10 : 0;
