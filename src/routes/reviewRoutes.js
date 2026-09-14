@@ -9,11 +9,13 @@ const {
 } = require("../controllers/reviewController");
 const { authenticate, authenticateOptional } = require("../middleware/authMiddleware");
 const { authorizeAdmin } = require("../middleware/adminMiddleware");
+const { uploadImages } = require("../middleware/uploadMiddleware");
 
 const router = express.Router();
 
-// Public: submit a review (auth optional — guests pass name + email)
-router.post("/", authenticateOptional, createReview);
+// Public: submit a review (auth optional — guests pass name + email).
+// multer accepts up to 3 photo files (5MB each) via multipart/form-data.
+router.post("/", authenticateOptional, uploadImages("images", 3), createReview);
 
 // Public: get approved reviews for a product
 router.get("/product/:productId", getProductReviews);

@@ -10,8 +10,8 @@ const settingSchema = new mongoose.Schema(
       storeName: { type: String, default: "RA STORE" },
       logo: { type: String, default: "" },
       favicon: { type: String, default: "" },
-      contactEmail: { type: String, default: "" },
-      phone: { type: String, default: "" },
+      contactEmail: { type: String, default: "rastoresupport@gmail.com" },
+      phone: { type: String, default: "03152553219" },
       address: { type: String, default: "" },
     },
 
@@ -19,7 +19,7 @@ const settingSchema = new mongoose.Schema(
       instagram: { type: String, default: "" },
       facebook: { type: String, default: "" },
       tiktok: { type: String, default: "" },
-      whatsapp: { type: String, default: "" }, // phone number in international format
+      whatsapp: { type: String, default: "923152553219" }, // phone number in international format
     },
 
     shipping: {
@@ -66,8 +66,8 @@ const settingSchema = new mongoose.Schema(
 
     // WhatsApp floating button configuration
     whatsapp: {
-      enabled: { type: Boolean, default: false },
-      number: { type: String, default: "" }, // e.g. "923001234567" (country code + number, no +)
+      enabled: { type: Boolean, default: true },
+      number: { type: String, default: "923152553219" }, // e.g. "923001234567" (country code + number, no +)
       message: { type: String, default: "Hi, I'm interested in your products!" },
       position: { type: String, enum: ["bottom-right", "bottom-left"], default: "bottom-right" },
       showOnMobile: { type: Boolean, default: true },

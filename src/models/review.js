@@ -45,6 +45,11 @@ const reviewSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Customer-uploaded photo URLs (ImageKit), one per attachment, max 3
+    images: {
+      type: [String],
+      default: [],
+    },
     adminResponse: {
       text: { type: String, default: "" },
       respondedAt: { type: Date },

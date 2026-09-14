@@ -1,4 +1,7 @@
-const { EMAIL_USER, EMAIL_PASS, EMAIL_SERVICE, FRONTEND_URL, ADMIN_URL } = process.env;
+const { EMAIL_USER, EMAIL_PASS, EMAIL_SERVICE, SUPPORT_EMAIL, FRONTEND_URL, ADMIN_URL } = process.env;
+
+// Customer-support inbox shown on replies regardless of the SMTP sender.
+const SUPPORT_INBOX = SUPPORT_EMAIL || "rastoresupport@gmail.com";
 const nodemailer = require("nodemailer");
 const ejs = require("ejs");
 const path = require("path");
@@ -14,7 +17,7 @@ class EmailService {
     }
 
     this.to = userEmail;
-    this.from = EMAIL_USER || "sinan.lakhani09@gmail.com";
+    this.from = `"RA STORE" <${EMAIL_USER || SUPPORT_INBOX}>`;
 
     this.transporter = nodemailer.createTransport({
       service: "gmail",
@@ -44,8 +47,8 @@ class EmailService {
         const templateData = {
           ...options.data,
           settings: options.data.settings || {},
-          FRONTEND_URL: FRONTEND_URL || "https://rastore.com",
-          ADMIN_URL: ADMIN_URL || "https://admin.rastore.com",
+          FRONTEND_URL: FRONTEND_URL || "https://ra-store-web.vercel.app",
+          ADMIN_URL: ADMIN_URL || "https://ra-store-admin.vercel.app",
         };
         html = await ejs.renderFile(templatePath, templateData);
         // Generate plain-text fallback if not provided
@@ -62,6 +65,7 @@ class EmailService {
       const mailOptions = {
         from: this.from,
         to: this.to,
+        replyTo: SUPPORT_INBOX,
         subject: subject,
         text: text,
         html: html || undefined,

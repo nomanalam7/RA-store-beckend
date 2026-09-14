@@ -413,8 +413,8 @@ const settingsData = {
     storeName: "RA STORE",
     logo: "/uploads/brand/logo.png",
     favicon: "/uploads/brand/favicon.ico",
-    contactEmail: "rastore@support.com",
-    phone: "",
+    contactEmail: "rastoresupport@gmail.com",
+    phone: "03152553219",
     address: "Karachi, Sindh, Pakistan",
   },
 
@@ -422,7 +422,7 @@ const settingsData = {
     instagram: "",
     facebook: "",
     tiktok: "",
-    whatsapp: "",
+    whatsapp: "923152553219",
   },
 
   shipping: {

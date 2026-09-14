@@ -9,6 +9,15 @@ const { buildAggregatePagination } = require("../utils/helper");
 const { createReviewSchema, updateReviewSchema } = require("../validators/reviewValidator");
 const EmailService = require("../utils/emailService");
 const { getOrCreateSettings } = require("./settingController");
+const ImageKit = require("imagekit");
+
+// Server-side ImageKit client — review photos posted via multer get pushed
+// straight to ImageKit as buffers (works on serverless, no local disk).
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+});
 
 // Public: submit a review (customer) — verified purchase check
 const createReview = async (req, res) => {
@@ -67,12 +76,28 @@ const createReview = async (req, res) => {
       reviewText.includes(word.toLowerCase())
     );
 
+    // Upload any customer photo attachments to ImageKit (multer memory buffers)
+    let images = [];
+    if (req.files && req.files.length) {
+      const results = await Promise.all(
+        req.files.map((file) =>
+          imagekit.upload({
+            file: file.buffer,
+            fileName: `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.]/g, "-").slice(0, 60)}`,
+            folder: "/ra-store/reviews",
+          })
+        )
+      );
+      images = results.map((r) => r.url);
+    }
+
     const review = await Review.create({
       product: value.product,
       user: userId,
       rating: value.rating,
       title: value.title || "",
       comment: value.comment,
+      images,
       isVerifiedPurchase,
       isApproved: !hasRestrictedWord, // auto-approve if no restricted words
     });
