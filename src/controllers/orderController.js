@@ -312,6 +312,7 @@ const updateOrderStatus = async (req, res) => {
     // Send customer status change email
     try {
       if (order.customer.email) {
+        const emailSettings = await getOrCreateSettings();
         const emailService = new EmailService(order.customer.email);
         const statusLabel = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
         await emailService.sendEmail(`Order #${order.orderNumber} Status Update: ${statusLabel}`, {
@@ -326,9 +327,27 @@ const updateOrderStatus = async (req, res) => {
             customer: order.customer,
             note: value.note || "",
             statusLabel,
-            settings: await getOrCreateSettings(),
+            settings: emailSettings,
           },
         });
+
+        // When an order is delivered, send a separate review-request email so
+        // the customer has a direct "Write a Review" CTA per item.
+        if (newStatus === "delivered") {
+          const reviewEmailService = new EmailService(order.customer.email);
+          await reviewEmailService.sendEmail(
+            `How was your order #${order.orderNumber}? Share your review!`,
+            {
+              template: "review-request",
+              data: {
+                order: { orderNumber: order.orderNumber },
+                customer: order.customer,
+                items: order.items,
+                settings: emailSettings,
+              },
+            }
+          );
+        }
       }
     } catch (emailErr) {
       console.error("Failed to send status change email:", emailErr);

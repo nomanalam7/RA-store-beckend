@@ -122,6 +122,14 @@ class EmailService {
         lines.push(`Your review for ${data.productName} is now live.`);
         lines.push(`View: ${data.FRONTEND_URL}/product/${data.productSlug}`);
         break;
+      case "review-request":
+        lines.push(`How was your order #${data.order?.orderNumber}?`);
+        lines.push(`Hi ${data.customer?.fullName},`);
+        lines.push(`We hope you love your purchase! Please share a quick review:`);
+        (data.items || []).forEach((item) => {
+          lines.push(`• ${item.name}: ${data.FRONTEND_URL}/product/${item.slug}#write-review`);
+        });
+        break;
       default:
         lines.push("RA Store notification");
     }

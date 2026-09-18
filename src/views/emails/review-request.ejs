@@ -1,0 +1,61 @@
+<%- include('partials/header', { title: 'How was your order? Leave a Review', settings: settings }) %>
+  <h2>Your order has arrived! 🎉</h2>
+  <p>Hi <%= customer.fullName %>,</p>
+
+  <p>We hope you're loving your purchase from <strong><%= settings.general?.storeName || 'RA Store' %></strong>! Your opinion means a lot — a quick review helps other shoppers and helps us improve.</p>
+
+  <div style="background: #f0f4ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 20px 24px; margin: 24px 0;">
+    <p style="margin: 0 0 4px; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Order</p>
+    <p style="margin: 0; font-size: 18px; font-weight: 700; color: #1e3a8a;">#<%= order.orderNumber %></p>
+  </div>
+
+  <h3 style="margin: 24px 0 16px;">Items in your order</h3>
+  <table class="order-table" role="table">
+    <tbody>
+      <% items.forEach(function(item) { %>
+        <tr>
+          <td style="padding: 14px 16px 14px 0; width: 72px;">
+            <% if (item.image) { %>
+              <img src="<%= item.image %>" alt="<%= item.name %>" class="item-image" style="display: block;">
+            <% } else { %>
+              <div class="item-image" style="background: #e5e7eb; text-align: center; color: #9ca3af; font-size: 12px; line-height: 56px;">No Image</div>
+            <% } %>
+          </td>
+          <td>
+            <div class="item-name"><%= item.name %></div>
+            <% if (item.size) { %>
+              <div class="item-meta">Size: <%= item.size %></div>
+            <% } %>
+          </td>
+          <td style="text-align: right; padding: 14px 0;">
+            <a
+              href="<%= FRONTEND_URL %>/product/<%= item.slug %>#write-review"
+              class="button"
+              style="display: inline-block; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: #ffffff !important; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap;"
+            >
+              ⭐ Write a Review
+            </a>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+
+  <p style="font-size: 14px; color: #6b7280; text-align: center; margin: 0;">
+    It only takes a minute — and your honest feedback makes a real difference.<br>
+    You can also upload a photo of your purchase!
+  </p>
+
+  <p style="text-align: center; margin: 24px 0 0;">
+    <a
+      href="<%= FRONTEND_URL %>/order/<%= order.orderNumber %>"
+      style="font-size: 13px; color: #6b7280; text-decoration: underline;"
+    >
+      View your order
+    </a>
+  </p>
+
+  <p style="margin-top: 24px;">Thank you for shopping with us! 🙌</p>
+<%- include('partials/footer', { settings: settings }) %>
