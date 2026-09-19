@@ -14,6 +14,7 @@ const getStats = async (req, res) => {
       customersAgg,
       recentOrders,
       topProducts,
+      profitAgg,
     ] = await Promise.all([
       Order.countDocuments(),
       Order.countDocuments({ status: "pending" }),
@@ -32,14 +33,66 @@ const getStats = async (req, res) => {
         .select("+costPrice")
         .sort({ salesCount: -1 })
         .limit(8),
+      // Real profit/cost from ALL non-cancelled order items joined with product costPrice
+      Order.aggregate([
+        { $match: { status: { $ne: "cancelled" } } },
+        { $unwind: "$items" },
+        {
+          $lookup: {
+            from: "products",
+            localField: "items.product",
+            foreignField: "_id",
+            pipeline: [{ $project: { costPrice: 1 } }],
+            as: "productInfo",
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: "$items.lineTotal" },
+            totalCost: {
+              $sum: {
+                $multiply: [
+                  "$items.quantity",
+                  { $ifNull: [{ $arrayElemAt: ["$productInfo.costPrice", 0] }, 0] },
+                ],
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            totalRevenue: 1,
+            totalCost: 1,
+            totalProfit: { $subtract: ["$totalRevenue", "$totalCost"] },
+            profitMargin: {
+              $cond: [
+                { $gt: ["$totalRevenue", 0] },
+                {
+                  $round: [
+                    { $multiply: [{ $divide: [{ $subtract: ["$totalRevenue", "$totalCost"] }, "$totalRevenue"] }, 100] },
+                    1,
+                  ],
+                },
+                0,
+              ],
+            },
+          },
+        },
+      ]),
     ]);
+
+    const profit = profitAgg[0] || { totalRevenue: 0, totalCost: 0, totalProfit: 0, profitMargin: 0 };
 
     const stats = {
       totalOrders,
       pendingOrders,
       totalProducts,
-      totalRevenue: revenueAgg[0]?.total || 0,
+      totalRevenue: profit.totalRevenue || revenueAgg[0]?.total || 0,
       totalCustomers: customersAgg[0]?.count || 0,
+      totalCost: profit.totalCost,
+      totalProfit: profit.totalProfit,
+      profitMargin: profit.profitMargin,
     };
 
     return sendSuccess(
